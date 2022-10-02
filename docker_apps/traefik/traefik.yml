@@ -1,4 +1,4 @@
-#PLEASE REMEMBER TO DELETE ALL [] AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID []
+#PLEASE REMEMBER TO DELETE ALL <> AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID <>
 global:
   checkNewVersion: true
   sendAnonymousUsage: false
@@ -12,7 +12,7 @@ entryPoints:
     address: :80
     forwardedHeaders:
       trustedIPs: &trustedIps
-        # Start of Clouflare public IP list for HTTP requests, remove this if you don't use it
+  # Start of Clouflare public IP list for HTTP requests, remove this if you don't use it
         - 173.245.48.0/20
         - 103.21.244.0/22
         - 103.22.200.0/22
@@ -34,7 +34,7 @@ entryPoints:
         - 2405:8100::/32
         - 2a06:98c0::/29
         - 2c0f:f248::/32
-        # End of Cloudlare public IP list
+  # End of Cloudlare public IP list
     http:
       redirections:
         entryPoint:
@@ -45,19 +45,19 @@ entryPoints:
   websecure:
     address: :443
     forwardedHeaders:
-      # Reuse list of Cloudflare Trusted IP's above for HTTPS requests
+  # Reuse list of Cloudflare Trusted IP's above for HTTPS requests
       trustedIPs: *trustedIps
     http:
       tls:
-        # Generate a wildcard domain certificate
+  # Generate a wildcard domain certificate
         certResolver: letsencrypt
         domains:
-          - main: [domain.com]
+          - main: <domain.com>
             sans:
-              - '*.[domain.com]'
+              - '*.<domain.com>'
 
 providers:
-  providersThrottleDuration: 2
+  providersThrottleDuration: 2s
 
   # File provider for connecting things that are outside of docker / defining middleware
   file:
@@ -67,15 +67,18 @@ providers:
   # Docker provider for connecting all apps that are inside of the docker network
   docker:
     watch: true
-    network: [proxy_network_name]
-    # Default host rule to containername.domain.example
-    defaultRule: "Host(`{{ index .Labels \"com.docker.compose.service\"}}.[domain.com]`)"
+    network: <proxy_network_name>
+  # Default host rule to containername.domain.example
+    defaultRule: "Host(`{{ index .Labels \"com.docker.compose.service\"}}.<domain.com>`)"
     exposedByDefault: false
-    endpoint: "tcp://[container_name_of_docker-socket-proxy]:2375"
+  # Make sure you change this to whatever you named your docker socket proxy container_name
+    endpoint: "tcp://<docker_sp>:2375"
 
 # Enable traefik ui
 api:
   dashboard: true
+  # Keep this here until you know you have traefik fully up and running then comment it out
+  insecure: true
 
 # Log level INFO|DEBUG|ERROR
 log:
@@ -84,16 +87,15 @@ log:
 
 # Use letsencrypt to generate ssl certificates
 # First one is production second one is staging
-
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: [email_address]
-    #Acme file needs to be chmod 600
+      email: <email_address>
+  # Acme file needs to be chmod 600
       storage: /etc/traefik/acme.json 
       dnsChallenge:
         provider: cloudflare
-        # Used to make sure the dns challenge is propagated to the rights dns servers
+  # Used to make sure the dns challenge is propagated to the rights dns servers
         resolvers:
           - "1.1.1.1:53"
           - "1.0.0.1:53"
@@ -101,11 +103,12 @@ certificatesResolvers:
   # letsencrypt_staging:
   #     acme:
   #       email: mail@domain.com
-  #       storage: /etc/traefik/acme.json # chmod 600 acme.json
-  #       caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
-  #       dnsChallenge:
-  #         provider: cloudflare
-  #         # Used to make sure the dns challenge is propagated to the rights dns servers
-  #         resolvers:
-  #           - "1.1.1.1:53"
-  #           - "1.0.0.1:53"
+  # Acme file needs to be chmod 600
+        # storage: /etc/traefik/acme.json
+        # caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+        # dnsChallenge:
+        #   provider: cloudflare
+  # Used to make sure the dns challenge is propagated to the rights dns servers
+          # resolvers:
+          #   - "1.1.1.1:53"
+          #   - "1.0.0.1:53"
