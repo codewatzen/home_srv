@@ -1,0 +1,30 @@
+#PLEASE REMEMBER TO DELETE ALL <> AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID <>
+networks:
+  # If the application is needed to talk to database apps uncomment this network
+  # <db_network_name>:
+  #   driver: bridge
+  #   external: true
+  # If the application needs to go through traefik use this network
+  <proxy_network_name>:
+    driver: bridge
+    external: true
+  # I like having a default docker network
+  <srv_net>:
+    driver: bridge
+    external: true
+
+services:
+  cloudflared:
+  #I prefer keeping the service_name and the container_name the same
+    container_name: cloudflared
+    image: erisamoe/cloudflared:latest
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    command: tunnel run <tunnel name>
+    volumes:
+      - /<container_location>/cloudflared:/etc/cloudflared/
+  # Make sure you change the name to the network that traefik is using
+    networks:
+      - <proxy_network_name>
+

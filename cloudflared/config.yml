@@ -1,0 +1,6 @@
+tunnel: <tunnel ID>
+credentials-file: /etc/cloudflared/<tunnel ID>.json
+ingress:
+  - service: https://<IP of traefik server or name of traefik container name> #your traefik's https entrypoint
+    originRequest:
+      originServerName: <root domain> #root of your domain ie domain.com domain.us

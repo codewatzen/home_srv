@@ -1,0 +1,145 @@
+#PLEASE REMEMBER TO DELETE ALL [] AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID []
+http:
+  ## MIDDLEWARES ##
+  middlewares:
+    noauth-secure:
+      chain:
+        middlewares:
+          - securityHeaders
+          - rate-limit
+          - compressMW
+
+    auth-secure:
+      chain:
+        middlewares:
+          - auth
+          - securityHeaders
+          - rate-limit
+          - compressMW
+
+    NC-secure:
+      chain:
+        middlewares:
+          - NC-securityHeaders
+          - NC-redirect
+          - rate-limit
+          - compressMW
+
+    htpAuth:
+        basicAuth:
+          users:
+            - "[username]:[sha string]"
+
+    # Authelia password protection
+    auth:
+      forwardauth:
+        address: http://authelia:9091/api/verify?rd=https://[subdomain_for_authelia.domain.com]/
+        trustForwardHeader: true
+        authResponseHeaders:
+          - Remote-User
+          - Remote-Groups
+          - Remote-Name
+          - Remote-Email
+
+    # Authelia basic auth guard
+    auth-basic:
+      forwardauth:
+        address: http://authelia:9091/api/verify?auth=basic
+        trustForwardHeader: true
+        authResponseHeaders:
+          - Remote-User
+          - Remote-Groups
+          - Remote-Name
+          - Remote-Email
+
+    # Traefik rate limit for certs
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+    compressMW:
+      compress: {}
+
+    bufferingMW:
+      buffering:
+        maxResponseBodyBytes: 2000000
+        maxRequestBodyBytes: 10485760
+        memRequestBodyBytes: 2097152
+        # maxResponseBodyBytes: 10485760
+        memResponseBodyBytes: 2097152
+        retryExpression: "IsNetworkError() && Attempts() <= 2"
+
+    # Security headers
+    securityHeaders:
+      headers:
+        customResponseHeaders:
+          X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex"
+          server: ""
+          X-Forwarded-Proto: "https"
+        sslProxyHeaders:
+          X-Forwarded-Proto: https
+        referrerPolicy: "strict-origin-when-cross-origin"
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsSeconds: 63072000
+        stsPreload: true
+
+
+    ### Let's give them a new name so it won't conflict with others
+    NC-securityHeaders:
+      headers:
+        accessControlMaxAge: 100
+        sslRedirect: true
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+    ### We will modify this value for Nextcloud to remove the X-Frame-Options error:
+        customFrameOptionsValue: "SAMEORIGIN" #CSP takes care of this but may be needed for organizr
+        contentTypeNosniff: true
+        browserXssFilter: true
+#       sslForceHost: true # add sslHost to all of the services
+#       sslHost: "example.com"
+        referrerPolicy: "no-referrer"
+    ### While CSP is a good security setting, Nextcloud's Apache server takes care of this for us!
+ #       contentSecurityPolicy: "frame-ancestors '*.example.com:*';object-src 'none';script-srv 'non';"
+        featurePolicy: "camera 'none'; geolocation 'none'; microphone 'none'; payment 'none'; usb 'none'; vr 'none';"
+        customResponseHeaders:
+    ### Change this to none to remove the Robots error:
+          X-Robots-Tag: "none"
+          server: ""
+
+### This section redirects requests for Nextcloud calendar and contacts service discovery
+### source: https://docs.nextcloud.com/server/21/admin_manual/issues/general_troubleshoot>
+    NC-redirect:
+      redirectRegex:
+        permanent: true
+        regex: "https://(.*)/.well-known/(card|cal)dav"
+        replacement: "https://${1}/remote.php/dav/"
+
+
+
+
+# Only use secure ciphers - https://ssl-config.mozilla.org/#server=traefik&version=2.6.0&>tls:
+  # certificates:
+  #     - certFile: /etc/traefik/certs/domain.cert
+  #       keyFile: /etc/traefik/certs/domain.key
+  #       stores:
+  #       - default
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305

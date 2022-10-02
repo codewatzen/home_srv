@@ -1,0 +1,46 @@
+#PLEASE REMEMBER TO DELETE ALL <> AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID <>
+networks:
+  # If the application is needed to talk to database apps uncomment this network
+  # <db_network_name>:
+  #   driver: bridge
+  #   external: true
+  # If the application needs to go through traefik use this network
+  <proxy_network_name>:
+    external: true
+    driver: bridge
+  # I like having a default docker network
+  <srv_net>:
+    driver: bridge
+    external: true
+
+services:
+  # Traefik reverse proxy
+  traefik:
+  # I prefer keeping the service_name and the container_name the same
+    container_name: traefik
+    image: traefik:latest
+    security_opt:
+      - no-new-privileges:true
+    restart: always
+    volumes:
+      - /<container_location>/traefik:/etc/traefik/
+    networks:
+      - <proxy_network_name>
+    ports:
+  # 8080 is here on set up to allow the api to be accessed at first for testing
+  # It should be removed after you fully set up traefik
+      - 8080:8080
+      - 80:80
+      - 443:443
+    environment:
+      TZ: <time_zone>
+  # Make sure you change this to whatever you named your docker socket proxy container_name
+      DOCKER_HOST: "tcp://<docker_sp>:2375"
+      CF_API_EMAIL: <email_address_for_cloudflare>
+      CF_DNS_API_TOKEN: <DNS_API_Token>
+    labels:
+      traefik.enable: true
+      traefik.docker.network: <proxy_network_name>
+      traefik.http.routers.api.middlewares: noauth-secure@file
+      traefik.http.routers.api.entryPoints: websecure
+      traefik.http.routers.api.service: api@internal

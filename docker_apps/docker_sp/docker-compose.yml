@@ -1,0 +1,50 @@
+#PLEASE REMEMBER TO DELETE ALL <> AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID <>
+networks:
+  # If the application is needed to talk to database apps uncomment this network
+  # <db_network_name>:
+  #   driver: bridge
+  #   external: true
+  # This is the network traefik and all apps that will go through traefik will use
+  <proxy_network_name>:
+    external: true
+    driver: bridge
+  # I like having a default docker network
+  <srv_net>:
+    driver: bridge
+    external: true
+
+services:
+  # Docker Socket Proxy is used to secure the docker socket for better security
+  # when using traefik, portainer & more
+  docker_sp:
+  #I prefer keeping the service_name and the container_name the same
+    container_name: docker_sp
+    image: tecnativa/docker-socket-proxy
+    privileged: true
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      # Make sure you change the name to the network that traefik is using
+      - <proxy_network_name>
+    environment:
+      - CONTAINERS=1
+      - POST=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+      - SERVICES=1
+      - TASKS=1
+      - VOLUMES=1
+      - SWARM=1
+      - SYSTEM=1
+      - BUILD=1
+      - CONFIGS=1
+      - DISTRIBUTION=1
+      - EXEC=1
+      - NODES=1
+      - SESSIONS=1
+      - DELETE=1
+      - PUID=[users_UID]
+      - PGID=[users_GID]
+

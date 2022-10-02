@@ -1,0 +1,111 @@
+#PLEASE REMEMBER TO DELETE ALL [] AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID []
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+serversTransport:
+  insecureSkipVerify: true
+
+entryPoints:
+  # Not used in apps, but redirect everything from HTTP to HTTPS
+  web:
+    address: :80
+    forwardedHeaders:
+      trustedIPs: &trustedIps
+        # Start of Clouflare public IP list for HTTP requests, remove this if you don't use it
+        - 173.245.48.0/20
+        - 103.21.244.0/22
+        - 103.22.200.0/22
+        - 103.31.4.0/22
+        - 141.101.64.0/18
+        - 108.162.192.0/18
+        - 190.93.240.0/20
+        - 188.114.96.0/20
+        - 197.234.240.0/22
+        - 198.41.128.0/17
+        - 162.158.0.0/15
+        - 104.16.0.0/12
+        - 172.64.0.0/13
+        - 131.0.72.0/22
+        - 2400:cb00::/32
+        - 2606:4700::/32
+        - 2803:f800::/32
+        - 2405:b500::/32
+        - 2405:8100::/32
+        - 2a06:98c0::/29
+        - 2c0f:f248::/32
+        # End of Cloudlare public IP list
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  # HTTPS endpoint, with domain wildcard
+  websecure:
+    address: :443
+    forwardedHeaders:
+      # Reuse list of Cloudflare Trusted IP's above for HTTPS requests
+      trustedIPs: *trustedIps
+    http:
+      tls:
+        # Generate a wildcard domain certificate
+        certResolver: letsencrypt
+        domains:
+          - main: [domain.com]
+            sans:
+              - '*.[domain.com]'
+
+providers:
+  providersThrottleDuration: 2
+
+  # File provider for connecting things that are outside of docker / defining middleware
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+  # Docker provider for connecting all apps that are inside of the docker network
+  docker:
+    watch: true
+    network: [proxy_network_name]
+    # Default host rule to containername.domain.example
+    defaultRule: "Host(`{{ index .Labels \"com.docker.compose.service\"}}.[domain.com]`)"
+    exposedByDefault: false
+    endpoint: "tcp://[container_name_of_docker-socket-proxy]:2375"
+
+# Enable traefik ui
+api:
+  dashboard: true
+
+# Log level INFO|DEBUG|ERROR
+log:
+  level: DEBUG
+  filePath: /etc/traefik/logs/traefik.log
+
+# Use letsencrypt to generate ssl certificates
+# First one is production second one is staging
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: [email_address]
+    #Acme file needs to be chmod 600
+      storage: /etc/traefik/acme.json 
+      dnsChallenge:
+        provider: cloudflare
+        # Used to make sure the dns challenge is propagated to the rights dns servers
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+  # letsencrypt_staging:
+  #     acme:
+  #       email: mail@domain.com
+  #       storage: /etc/traefik/acme.json # chmod 600 acme.json
+  #       caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+  #       dnsChallenge:
+  #         provider: cloudflare
+  #         # Used to make sure the dns challenge is propagated to the rights dns servers
+  #         resolvers:
+  #           - "1.1.1.1:53"
+  #           - "1.0.0.1:53"

@@ -1,0 +1,2 @@
+//  This file needs to be blank and chmod 600
+// delete everything in this file then run chmod 600 before initializing docker-compose file. 

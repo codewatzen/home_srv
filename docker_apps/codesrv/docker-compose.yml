@@ -1,0 +1,45 @@
+#PLEASE REMEMBER TO DELETE ALL <> AND CHANGE THE NAMES/STRING OF CHARACTERS IN SAID <>
+networks:
+  # If the application is needed to talk to database apps uncomment this network
+  # <db_network_name>:
+  #   driver: bridge
+  #   external: true
+  # If the application needs to go through traefik use this network
+  <proxy_network_name>:
+    driver: bridge
+    external: true
+  # I like having a default docker network
+  <srv_net>:
+    driver: bridge
+    external: true
+
+services:
+  code_srv:
+  #I prefer calling it the same as the container_name
+    container_name: <container_name>
+    image: lscr.io/linuxserver/code-server
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    volumes:
+      - /<container_location>/codesrv:/config
+      - /<location_you_want_as_default>:/array
+    networks:
+      - <proxy_network_name>
+  # Only needed if you want to keep the ports exposed after being behind traefik or if the app isn't going behind traefik
+    ports:
+      - <host_port_used>:<port_docker_uses>
+    environment:
+      TZ: <time_zone>
+      PUID: <users_UID>
+      PGID: <users_GID>
+  # These labels are only used if the application is going through traefik
+    # labels:
+      # traefik.enable: true
+  # Uncomment out the below line if you want to change the apps url from <container_name>.<domain.com> to something else
+    #   traefik.http.routers.<app_name>.rule: Host(`<name>.<domain.com`)
+  # Use auth-secure@file if you want the application to use authelia for multi-factor authentication
+    #   traefik.http.routers.<app_name>.middlewares: noauth-secure@file
+    #   traefik.http.routers.<app_name>.entrypoints: websecure
+    #   traefik.http.routers.<app_name>.service: svc-<app_name>
+    #   traefik.http.services.svc-<app_name>.loadBalancer.server.port: <port_docker_container_uses>
